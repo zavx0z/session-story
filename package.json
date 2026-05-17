@@ -1,8 +1,14 @@
 {
   "name": "session-story",
-  "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "prepare": "bun run src/cli.ts prepare",
+    "merge": "bun run src/cli.ts merge",
+    "keyframes": "bun run src/cli.ts keyframes",
+    "handoff": "bun run src/cli.ts handoff",
+    "test": "bun test"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
