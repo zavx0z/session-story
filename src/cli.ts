@@ -4,6 +4,7 @@ import { handoff } from "./handoff"
 import { keyframes } from "./keyframes"
 import { merge } from "./merge"
 import { prepare } from "./prepare"
+import { summarize } from "./summarize"
 
 async function main(): Promise<void> {
   const args = parseArgs(Bun.argv.slice(2))
@@ -23,6 +24,11 @@ async function main(): Promise<void> {
     return
   }
 
+  if (args.command === "summarize") {
+    await summarize(args.positional[0] ?? ".session-story", args.flags)
+    return
+  }
+
   if (args.command === "keyframes") {
     await keyframes(args.positional[0] ?? ".session-story", args.flags)
     return
@@ -38,7 +44,8 @@ async function main(): Promise<void> {
 Команды:
   prepare <video> [--out .session-story] [--target-frames 350] [--batch-size 12]
   merge [workdir]
-  keyframes [workdir] [--max 32]
+  summarize [workdir]
+  keyframes [workdir] [--max 32] [--min-gap-sec 2] [--prefer-roles setup,visual_result,final_result]
   handoff [workdir]
 `)
 }

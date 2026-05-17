@@ -26,6 +26,7 @@ export async function prepare(inputVideo: string, flags: Record<string, string |
   await mkdir(join(outputDir, "qwen-prompts"), { recursive: true })
   await mkdir(join(outputDir, "qwen-results"), { recursive: true })
   await mkdir(join(outputDir, "timeline"), { recursive: true })
+  await mkdir(join(outputDir, "story"), { recursive: true })
   await mkdir(join(outputDir, "keyframes"), { recursive: true })
   await mkdir(join(outputDir, "gpt-handoff"), { recursive: true })
 
@@ -142,11 +143,23 @@ function makeBatchPrompt(batchId: string, frames: FrameInfo[]): string {
 
   return `# Анализ кадров для Qwen: ${batchId}
 
-Ты анализируешь одну порцию кадров из записи рабочей сессии.
+Ты анализируешь одну порцию кадров из записи рабочей AI-сессии.
 
 Это не финальная дикторка и не художественный сценарий.
+Твоя задача — фактически описать, что видно на кадрах, чтобы потом из этого собрать видеоотчёт, новость и видеоблог.
 
-Твоя задача — фактически описать, что видно на кадрах.
+Главное правило по ключевым кадрам:
+ключевые кадры — это фотоотчёт разработки, а не красивые thumbnails.
+
+Ключевой кадр нужен, если по нему можно восстановить важный шаг работы:
+- стартовое состояние;
+- постановку задачи или правки;
+- работу агента;
+- изменение кода;
+- запуск команды, тест, ошибку или перезапуск;
+- проверку в браузере или интерфейсе;
+- видимый результат;
+- решение, поворот сюжета или финальное состояние.
 
 Обязательно:
 - просмотри каждый видимый кадр;
@@ -158,7 +171,41 @@ function makeBatchPrompt(batchId: string, frames: FrameInfo[]): string {
 - отмечай запуск команд, тесты, перезапуски, ошибки;
 - отмечай видимые изменения интерфейса;
 - отмечай ожидание и техническую рутину;
-- предлагай возможные ключевые кадры.
+- отмечай idle-участки, которые можно ускорить или вырезать;
+- предлагай возможные ключевые кадры как доказательный фотоотчёт.
+
+Не выбирай много одинаковых кадров подряд.
+Если кадры похожи, оставь один лучший, укажи его coverageGroup и объясни, какой участок он покрывает.
+
+storyRole для ключевого кадра выбери из списка:
+- setup
+- user_instruction
+- agent_work
+- code_change
+- test_or_error
+- visual_result
+- decision
+- final_result
+- transition
+- evidence
+
+kind для события выбери из списка:
+- setup
+- instruction
+- agent_work
+- code_edit
+- test
+- error
+- browser_check
+- result
+- idle
+- transition
+- other
+
+suggestedSpeed для события:
+- keep — оставить в нормальном темпе;
+- speed_up — ускорить;
+- cut — можно вырезать.
 
 Важно:
 - batch-и и contact sheets — только способ передать тебе все кадры порциями;
@@ -173,7 +220,7 @@ function makeBatchPrompt(batchId: string, frames: FrameInfo[]): string {
 - кадров: ${frames.length}
 
 Кадры:
-${frames.map((frame) => `- ${basename(frame.file)} · ${frame.timecode}`).join("\\n")}
+${frames.map((frame) => `- ${basename(frame.file)} · ${frame.timecode}`).join("\n")}
 
 Верни только валидный JSON:
 
@@ -186,6 +233,7 @@ ${frames.map((frame) => `- ${basename(frame.file)} · ${frame.timecode}`).join("
   },
   "events": [
     {
+      "id": "${batchId}_event_001",
       "fromFrame": "${basename(from.file)}",
       "toFrame": "${basename(to.file)}",
       "fromTime": "${from.timecode}",
@@ -193,6 +241,11 @@ ${frames.map((frame) => `- ${basename(frame.file)} · ${frame.timecode}`).join("
       "visible": "Что видно на экране.",
       "action": "Что происходит.",
       "meaning": "Почему это важно для истории.",
+      "kind": "agent_work",
+      "importance": "medium",
+      "isIdle": false,
+      "suggestedSpeed": "keep",
+      "requiresKeyframe": true,
       "editingHint": "Держать / ускорить / переход / важное визуальное доказательство.",
       "voiceoverHint": "Что здесь может объяснить диктор."
     }
@@ -201,8 +254,14 @@ ${frames.map((frame) => `- ${basename(frame.file)} · ${frame.timecode}`).join("
     {
       "frame": "${basename(from.file)}",
       "timecode": "${from.timecode}",
-      "reason": "Почему этот кадр важен.",
-      "storyRole": "Роль кадра в истории.",
+      "timeSec": ${from.timeSec},
+      "reason": "Почему этот кадр важен как часть фотоотчёта.",
+      "storyRole": "setup",
+      "coverageGroup": "${batchId}_setup",
+      "noveltyScore": 0.8,
+      "mustKeep": true,
+      "duplicateOf": null,
+      "coveredEventIds": ["${batchId}_event_001"],
       "importance": "high"
     }
   ],

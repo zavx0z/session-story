@@ -27,7 +27,36 @@ export type StoryManifest = {
   batches: BatchInfo[]
 }
 
+export type StoryRole =
+  | "setup"
+  | "user_instruction"
+  | "agent_work"
+  | "code_change"
+  | "test_or_error"
+  | "visual_result"
+  | "decision"
+  | "final_result"
+  | "transition"
+  | "evidence"
+
+export type EventKind =
+  | "setup"
+  | "instruction"
+  | "agent_work"
+  | "code_edit"
+  | "test"
+  | "error"
+  | "browser_check"
+  | "result"
+  | "idle"
+  | "transition"
+  | "other"
+
+export type Importance = "low" | "medium" | "high"
+export type SuggestedSpeed = "keep" | "speed_up" | "cut"
+
 export type QwenEvent = {
+  id?: string
   fromFrame: string
   toFrame: string
   fromTime: string
@@ -35,6 +64,11 @@ export type QwenEvent = {
   visible: string
   action: string
   meaning: string
+  kind?: EventKind
+  importance?: Importance
+  isIdle?: boolean
+  suggestedSpeed?: SuggestedSpeed
+  requiresKeyframe?: boolean
   editingHint?: string
   voiceoverHint?: string
 }
@@ -44,8 +78,13 @@ export type QwenKeyframe = {
   timecode: string
   timeSec?: number
   reason: string
-  storyRole?: string
-  importance?: "low" | "medium" | "high"
+  storyRole?: StoryRole
+  coverageGroup?: string
+  noveltyScore?: number
+  mustKeep?: boolean
+  duplicateOf?: string
+  coveredEventIds?: string[]
+  importance?: Importance
 }
 
 export type QwenBatchResult = {
@@ -58,4 +97,22 @@ export type QwenBatchResult = {
   events: QwenEvent[]
   possibleKeyframes?: QwenKeyframe[]
   segmentSummary?: string
+}
+
+export type TimelineFile = {
+  inputVideo: string
+  videoDurationSec: number
+  batches: QwenBatchResult[]
+}
+
+export type StoryChapter = {
+  id: string
+  title: string
+  fromTime: string
+  toTime: string
+  summary: string
+  importantEvents: string[]
+  recommendedKeyframeRoles: StoryRole[]
+  editingNotes: string
+  voiceoverAngle: string
 }

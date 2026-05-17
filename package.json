@@ -5,9 +5,11 @@
   "scripts": {
     "prepare": "bun run src/cli.ts prepare",
     "merge": "bun run src/cli.ts merge",
+    "summarize": "bun run src/cli.ts summarize",
     "keyframes": "bun run src/cli.ts keyframes",
     "handoff": "bun run src/cli.ts handoff",
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/bun": "latest"
